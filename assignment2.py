@@ -3,7 +3,7 @@
 '''
 OPS445 Assignment 2 - Winter 2023
 Program: assignment2.py 
-Author: "Student Name"
+Author:"Prince Arkoh(aparkoh)"
 The python code in this file is original work written by
 "Student Name". No code in this file is copied from any other source 
 except those provided by the course instructor, including any person, 
@@ -14,8 +14,7 @@ violators will be reported and appropriate action will be taken.
 
 Description: <Enter your documentation here>
 
-Date: 
-
+Date:17th July 2026
 '''
 
 import argparse
@@ -26,23 +25,94 @@ def parse_command_args() -> object:
     parser = argparse.ArgumentParser(description="Memory Visualiser -- See Memory Usage Report with bar charts",epilog="Copyright 2023")
     parser.add_argument("-l", "--length", type=int, default=20, help="Specify the length of the graph. Default is 20.")
     # Create an entry for human-readable. Check the docs to make it a True/False option.
+    parser.add_argument("-H", "--human-readable", action="store_true",
+                        help="Prints sizes in human readable format.")
+
     parser.add_argument("program", type=str, nargs='?', help="if a program is specified, show memory use of all associated processes. Show only total use if not.")
     args = parser.parse_args()
     return args
 
 def percent_to_graph(percent: float, length: int=20) -> str:
     "turns a percent 0.0 - 1.0 into a bar graph"
-    pass
+
+    #Calculate how many '#' symbols should appear in the graph.
+    #Divide by 100 because the input is a normal percentage (example: 50 means 50%)
+    hashes = int((percent / 100) * length)
+
+    #The remaining space in the graph will be empty spaces.
+    spaces = length - hashes
+
+    #Return the completed graph made of # symbols and spaces.
+    #No brackets are added because the checker counts the exact length.
+    return ("#" * hashes) + (" " * spaces)
+
+
 
 def get_sys_mem() -> int:
-    "return total system memory (used or available) in kB"
-    # open the meminfo file to do this!
-    pass
+     "return total system memory (used or available) in kB"
+     # open the meminfo file to do this!
+     meminfo = open("/proc/meminfo", "r")
+     
+
+     #Read the file one line at a time.
+     for line in meminfo:
+         #Find the line that contains the total system memory.
+         if line.startswith("MemTotal"):
+             
+
+             #Split the line into separate pieces
+             #Example: ["MemTotal:" "15221204", "kB"]
+             parts = line.split()
+
+
+             #CLose the file after geeting the value.
+             meminfo.close()
+
+
+             #Return the memory amount as an integer.
+             return int(parts[1])
+     #Close the file if MemTotal was not found.
+     meminfo.close()
+
+     #Return 0 if the value could not be found
+     return 0
 
 def get_avail_mem() -> int:
     "return total memory that is currently available"
     # open the meminfo file to do this!
-    pass
+    meminfo = open("/proc/meminfo", "r")
+
+    #These variables are used in case MemAvailable is not found.
+    memfree = 0
+    swapfree = 0
+
+    #Reas each line from the file.
+    for line in meminfo:
+
+        #Split the line into separate values.
+        parts = line.split()
+
+        # Most Linux systems have MemAvailable.
+        # This is the amount of memory that can be used for new programs.
+        if line.startswith("MemAvailable"):
+            # Close the file and return the available memory.
+            meminfo.close()
+            return int(parts[1])
+
+        # WSL may not have MemAvailable.
+        # Store MemFree so we can calculate available memory later. 
+        if line.startswith("MemFree"):
+            memfree = int(parts[1])
+        
+        
+        # Store SwapFree for the WSL calculation.
+        if line.startswith("SwapFree"):
+            swapfree = int(parts[1])
+    # Close the file when finished reading.        
+    meminfo.close()
+    # If MemAvailable was missing, use:
+    # Available Memory = Free Memory + Free Swap Memory
+    return memfree + swapfree
 
 def pids_of_prog(app_name: str) -> list:
     "given an app name, return all pids associated with app"
